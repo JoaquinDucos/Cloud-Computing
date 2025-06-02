@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "recipes" {
-  name         = var.table_name
+  name         = "${var.project_name}-${var.environment}-recipes"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -31,6 +31,8 @@ resource "aws_dynamodb_table" "recipes" {
   }
 
   tags = {
-    Name = "recipes-table"
+    Name        = "${var.project_name}-${var.environment}-recipes"
+    Project     = var.project_name
+    Environment = var.environment
   }
 } 

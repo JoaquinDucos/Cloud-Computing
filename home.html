@@ -52,6 +52,23 @@
       font-size: 1.8rem;
     }
 
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
     nav a {
       color: white;
       text-decoration: none;
@@ -60,10 +77,26 @@
       transition: all 0.3s ease;
       padding: 8px 12px;
       border-radius: 20px;
+      cursor: pointer;
     }
 
     nav a:hover {
       background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
 
     .contenido {
@@ -444,33 +477,76 @@
         grid-template-columns: 1fr;
       }
       
+      .header-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .user-info {
+        order: -1;
+      }
+      
       nav {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        margin-top: 10px;
-      }
-      
-      .header-container {
-        flex-direction: column;
+        gap: 10px;
       }
       
       nav a {
-        margin: 5px 10px;
+        margin: 0;
       }
+    }
+
+    /* Loading spinner */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
+  <!-- Loading overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>Verificando autenticación...</p>
+  </div>
 
   <header>
     <div class="header-container">
       <h1>Recetas en Casa</h1>
+      <div class="user-info">
+        <div id="user-avatar" class="user-avatar"></div>
+        <span id="user-name">Usuario</span>
+      </div>
       <nav>
-        <a href="#">Mis Datos</a>
-        <a href="#">Mis Recetas</a>
-        <a href="#">Favoritos</a>
-        <a href="index.html">Salir</a>
+        <a href="#" onclick="showMyRecipes()">Mis Recetas</a>
+        <a href="#" onclick="showFavorites()">Favoritos</a>
+        <button class="logout-btn" onclick="logout()">Salir</button>
       </nav>
     </div>
   </header>
@@ -639,27 +715,178 @@
     <p>© 2025 Recetas en Casa - Todos los derechos reservados</p>
   </footer>
 
+  <!-- Configuration Script -->
+  <script src="config.js"></script>
+  
+  <!-- Cognito Auth Script -->
+  <script src="auth.js"></script>
+
   <script>
-    // API Gateway URL
-    const api_gateway_url = "https://y26l9ltbz8.execute-api.us-east-1.amazonaws.com/dev";
+    // API Gateway URL from global configuration
+    const api_gateway_url = window.APP_CONFIG.API_GATEWAY_URL;
     
-    // Verificar si hay usuario logueado
-    /*document.addEventListener('DOMContentLoaded', function() {
-      const usuario = localStorage.getItem('usuario');
-      if (!usuario) {
-        // Si no hay usuario, redirigir al login
+    // Global variables
+    let searchIngredients = [];
+    let currentUser = null;
+
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Wait for auth to be ready
+      if (!auth) {
+        await new Promise(resolve => {
+          document.addEventListener('authReady', resolve, { once: true });
+        });
+      }
+      
+      try {
+        const isAuthenticated = await auth.initialize();
+        
+        if (!isAuthenticated) {
+          // User not authenticated, redirect to login
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // User is authenticated, get user info and setup page
+        currentUser = auth.getUser();
+        setupUserInterface();
+        hideLoadingOverlay();
+        
+      } catch (error) {
+        console.error('Authentication error:', error);
         window.location.href = 'index.html';
       }
-    });*/ 
+    });
+
+    function setupUserInterface() {
+      // Display user information
+      const userAvatar = document.getElementById('user-avatar');
+      const userName = document.getElementById('user-name');
+      
+      if (currentUser) {
+        // Extract first letter of name or email for avatar
+        const name = currentUser.name || currentUser.email || 'Usuario';
+        const firstLetter = name.charAt(0).toUpperCase();
+        
+        userAvatar.textContent = firstLetter;
+        userName.textContent = name.split('@')[0]; // Remove domain from email if present
+      }
+    }
+
+    function hideLoadingOverlay() {
+      const overlay = document.getElementById('loading-overlay');
+      overlay.style.display = 'none';
+    }
+
+    function logout() {
+      if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+        auth.logout();
+      }
+    }
+
+    async function showMyRecipes() {
+      if (!auth.isAuthenticated) {
+        alert('Debes estar autenticado para ver tus recetas');
+        return;
+      }
+      
+      try {
+        const response = await auth.makeAuthenticatedRequest(`${api_gateway_url}/recipes`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const misRecetas = await response.json();
+        displayMyRecipes(misRecetas);
+      } catch (error) {
+        console.error('Error al cargar mis recetas:', error);
+        alert('Error al cargar tus recetas. Intenta más tarde.');
+      }
+    }
+
+    // Mostrar mis recetas
+    function displayMyRecipes(recetas) {
+      const resultsContainer = document.getElementById('search-results');
+      const resultsGrid = document.getElementById('search-results-grid');
+      
+      // Limpiar resultados anteriores
+      resultsGrid.innerHTML = '';
+      
+      if (!Array.isArray(recetas)) {
+        console.error('Expected array but got:', recetas);
+        resultsGrid.innerHTML = '<p>Error al cargar las recetas.</p>';
+        resultsContainer.style.display = 'block';
+        return;
+      }
+      
+      if (recetas.length === 0) {
+        resultsGrid.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: #666;">
+            <h3>📝 No tienes recetas aún</h3>
+            <p>¡Agrega tu primera receta usando el botón "Agregar Receta"!</p>
+          </div>
+        `;
+        resultsContainer.style.display = 'block';
+        return;
+      }
+      
+      // Mostrar título actualizado
+      const existingTitle = document.querySelector('#search-results h2');
+      if (existingTitle) {
+        existingTitle.textContent = `Mis Recetas (${recetas.length})`;
+      } else {
+        const title = document.createElement('h2');
+        title.textContent = `Mis Recetas (${recetas.length})`;
+        title.style.marginBottom = '1rem';
+        resultsContainer.insertBefore(title, resultsGrid);
+      }
+      
+      // Crear tarjetas para cada receta
+      recetas.forEach(receta => {
+        const recetaCard = document.createElement('div');
+        recetaCard.className = 'receta';
+        
+        // Usamos una imagen genérica de comida
+        const imgClass = ['pizza', 'galletas', 'quinoa'][Math.floor(Math.random() * 3)];
+        
+        // Limitamos la longitud del texto de instrucciones para mostrar
+        const instruccionesCortas = Array.isArray(receta.instructions) 
+          ? receta.instructions.join(' ').substring(0, 100) + '...'
+          : (receta.instructions || 'No hay instrucciones disponibles.').substring(0, 100) + '...';
+        
+        recetaCard.innerHTML = `
+          <div class="receta-img ${imgClass}"></div>
+          <div class="receta-info">
+            <h3>${receta.title}</h3>
+            <p><strong>Categoría:</strong> ${receta.category || 'N/A'}</p>
+            <p><strong>Ingredientes:</strong> ${Array.isArray(receta.ingredients) ? receta.ingredients.join(', ') : 'N/A'}</p>
+            <p>${instruccionesCortas}</p>
+            <div class="receta-footer">
+              <span class="tiempo">⏱️ ${receta.time} minutos</span>
+              <a href="receta.html?id=${receta.id}" class="btn">Ver receta</a>
+            </div>
+          </div>
+        `;
+        
+        resultsGrid.appendChild(recetaCard);
+      });
+      
+      resultsContainer.style.display = 'block';
+      
+      // Scroll to results
+      resultsContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showFavorites() {
+      alert('Funcionalidad en desarrollo: Favoritos');
+    }
 
     // Configuración de tipos de búsqueda
     const searchTypeRadios = document.querySelectorAll('input[name="search-type"]');
     const searchNombreContainer = document.getElementById('search-nombre-container');
     const searchCategoriaContainer = document.getElementById('search-categoria-container');
     const searchIngredientesContainer = document.getElementById('search-ingredientes-container');
-    
-    // Array para almacenar ingredientes de búsqueda
-    let searchIngredients = [];
     
     // Cambiar tipo de búsqueda
     searchTypeRadios.forEach(radio => {
@@ -782,6 +1009,11 @@
     document.getElementById('add-recipe-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       
+      if (!auth.isAuthenticated) {
+        alert('Debes estar autenticado para crear una receta');
+        return;
+      }
+      
       // Obtener todos los ingredientes
       const ingredientInputs = document.querySelectorAll('input[name="ingredientes[]"]');
       const ingredientes = Array.from(ingredientInputs).map(input => input.value);
@@ -793,18 +1025,14 @@
         description: '',
         ingredients: ingredientes,
         instructions: document.getElementById('recipe-instructions').value.split('\n').filter(line => line.trim() !== ''),
-        imageUrl: null,
-        userId: 'default-user'
+        imageUrl: null
       };
       
       try {
         console.log('Sending recipe data:', recetaData);
-        const response = await fetch(`${api_gateway_url}/recipes`, {
+        
+        const response = await auth.makeAuthenticatedRequest(`${api_gateway_url}/recipes`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
           body: JSON.stringify(recetaData)
         });
         
@@ -828,6 +1056,11 @@
 
     // Búsqueda de recetas
     document.getElementById('btn-search').addEventListener('click', async function() {
+      if (!auth.isAuthenticated) {
+        alert('Debes estar autenticado para buscar recetas');
+        return;
+      }
+
       const searchType = document.querySelector('input[name="search-type"]:checked').value;
       let searchParams = '';
       
@@ -857,14 +1090,24 @@
       
       try {
         let url = `${api_gateway_url}/recipes/search?${searchParams}`;
+        console.log('Search URL:', url);
         
-        const response = await fetch(url);
+        const response = await auth.makeAuthenticatedRequest(url);
+        console.log('Search response status:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Search failed:', errorData);
+          throw new Error(`HTTP ${response.status}: ${errorData.error || 'Search failed'}`);
+        }
+        
         const recetas = await response.json();
+        console.log('Search results:', recetas);
         
         displaySearchResults(recetas);
       } catch (error) {
         console.error('Error en la búsqueda:', error);
-        alert('Error al buscar recetas. Intenta más tarde.');
+        alert(`Error al buscar recetas: ${error.message}`);
       }
     });
 
@@ -876,8 +1119,26 @@
       // Limpiar resultados anteriores
       resultsGrid.innerHTML = '';
       
+      // Verificar si recetas es un array
+      if (!Array.isArray(recetas)) {
+        console.error('Expected array but got:', recetas);
+        resultsGrid.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: #e74c3c;">
+            <h3>⚠️ Error al cargar resultados</h3>
+            <p>El servidor devolvió datos inesperados. Por favor, intenta de nuevo.</p>
+          </div>
+        `;
+        resultsContainer.style.display = 'block';
+        return;
+      }
+      
       if (recetas.length === 0) {
-        resultsGrid.innerHTML = '<p>No se encontraron recetas que coincidan con tu búsqueda.</p>';
+        resultsGrid.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: #666;">
+            <h3>🔍 No se encontraron recetas</h3>
+            <p>No se encontraron recetas que coincidan con tu búsqueda.</p>
+          </div>
+        `;
         resultsContainer.style.display = 'block';
         return;
       }
@@ -891,18 +1152,19 @@
         const imgClass = ['pizza', 'galletas', 'quinoa'][Math.floor(Math.random() * 3)];
         
         // Limitamos la longitud del texto de instrucciones para mostrar
-        const instruccionesCortas = receta.instructions 
-          ? receta.instructions.substring(0, 100) + '...'
-          : 'No hay instrucciones disponibles.';
+        const instruccionesCortas = Array.isArray(receta.instructions) 
+          ? receta.instructions.join(' ').substring(0, 100) + '...'
+          : (receta.instructions || 'No hay instrucciones disponibles.').substring(0, 100) + '...';
         
         recetaCard.innerHTML = `
           <div class="receta-img ${imgClass}"></div>
           <div class="receta-info">
             <h3>${receta.title}</h3>
+            <p><strong>Categoría:</strong> ${receta.category || 'N/A'}</p>
             <p>${instruccionesCortas}</p>
             <div class="receta-footer">
               <span class="tiempo">⏱️ ${receta.time} minutos</span>
-              <a href="receta.html?id=${receta.id_receta}" class="btn">Ver receta</a>
+              <a href="receta.html?id=${receta.id}" class="btn">Ver receta</a>
             </div>
           </div>
         `;
@@ -911,6 +1173,9 @@
       });
       
       resultsContainer.style.display = 'block';
+      
+      // Scroll to results
+      resultsContainer.scrollIntoView({ behavior: 'smooth' });
     }
   </script>
 

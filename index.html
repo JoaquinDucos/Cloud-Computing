@@ -2,128 +2,375 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Acceso - Recetas en Casa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recetas en Casa - Inicio de Sesión</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    body {
+    :root {
+      --primary-color: #ff914d;
+      --primary-dark: #ff7a26;
+      --accent-color: #4cb050;
+      --text-color: #333;
+      --light-gray: #f5f5f5;
+      --white: #ffffff;
+      --error-color: #e74c3c;
+    }
+    
+    * {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #fbc2eb, #a6c1ee);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
       min-height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Comida flotante */
-    .icono-flotante {
-      position: absolute;
-      opacity: 0.08;
-      font-size: 80px;
-      color: #555;
-      animation: flotar 20s infinite alternate ease-in-out;
-      z-index: 0;
-    }
-
-    @keyframes flotar {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(-20px); }
-    }
-
-    .icono1 { top: 10%; left: 5%; }
-    .icono2 { bottom: 15%; right: 10%; }
-    .icono3 { top: 50%; left: 40%; }
-
-    .container {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
       display: flex;
-      flex-direction: row;
-      overflow: hidden;
-      max-width: 900px;
-      width: 95%;
-      z-index: 1;
-    }
-
-    .form-container {
-      padding: 40px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      color: var(--text-color);
     }
 
-    .image-container {
-      flex: 1;
-      background-image: url('recetas.png');
-      background-size: cover;
-      background-position: center;
-      min-height: 400px;
-    }
-
-    h1 {
-      font-size: 28px;
-      color: #333;
-      margin-bottom: 20px;
+    .login-container {
+      background: var(--white);
+      padding: 2.5rem;
+      border-radius: 15px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
       text-align: center;
     }
 
-    button {
-      width: 200px;
-      padding: 15px;
-      margin-top: 16px;
-      background-color: #ff914d;
-      border: none;
+    .logo {
+      margin-bottom: 2rem;
+    }
+
+    .logo h1 {
+      color: var(--primary-color);
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo p {
+      color: #666;
+      font-size: 1rem;
+    }
+
+    .login-form {
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e1e1e1;
       border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
       color: white;
-      font-size: 18px;
+      border: none;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: transform 0.3s, box-shadow 0.3s;
+      margin-bottom: 1rem;
     }
 
-    button:hover {
-      background-color: #ff7a26;
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 145, 77, 0.3);
     }
 
-    footer {
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-signup {
+      width: 100%;
+      background: transparent;
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 1rem;
+    }
+
+    .btn-signup:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .divider {
+      margin: 1.5rem 0;
+      position: relative;
+      text-align: center;
+      color: #666;
+    }
+
+    .divider::before {
+      content: '';
       position: absolute;
-      bottom: 20px;
-      font-size: 12px;
-      color: #333;
-      z-index: 2;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e1e1e1;
     }
 
-    @media screen and (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
+    .divider span {
+      background: white;
+      padding: 0 1rem;
+    }
 
-      .image-container {
-        min-height: 200px;
+    .error-message {
+      background: #fee;
+      color: var(--error-color);
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 1rem;
+      border: 1px solid #fcc;
+      display: none;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .features {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e1e1e1;
+    }
+
+    .features h3 {
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .feature-list {
+      text-align: left;
+    }
+
+    .feature-list li {
+      list-style: none;
+      padding: 0.3rem 0;
+      color: #666;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      color: var(--accent-color);
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 1rem;
+        padding: 2rem;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Iconos flotantes -->
-  <div class="icono-flotante icono1">🍕</div>
-  <div class="icono-flotante icono2">🥑</div>
-  <div class="icono-flotante icono3">🍞</div>
-
-  <!-- Contenedor principal -->
-  <div class="container">
-    <div class="form-container">
-      <h1>Bienvenido a Recetas en Casa</h1>
-      <button onclick="window.location.href='home.html'">Entrar</button>
+  <div class="login-container">
+    <div class="logo">
+      <h1>🍳 Recetas en Casa</h1>
+      <p>Tu cocina, tus recetas</p>
     </div>
-    <div class="image-container"></div>
+
+    <div id="error-message" class="error-message"></div>
+
+    <div class="login-form">
+      <button id="btn-login" class="btn-login">
+        <span id="login-text">Iniciar Sesión con Cognito</span>
+        <span id="login-loading" class="loading" style="display: none;"></span>
+      </button>
+      
+      <button id="btn-signup" class="btn-signup">
+        Crear Cuenta Nueva
+      </button>
+    </div>
+
+    <div class="divider">
+      <span>¿Por qué unirse?</span>
+    </div>
+
+    <div class="features">
+      <h3>Con tu cuenta podrás:</h3>
+      <ul class="feature-list">
+        <li>Guardar tus recetas favoritas</li>
+        <li>Crear y compartir tus propias recetas</li>
+        <li>Buscar recetas por ingredientes</li>
+        <li>Acceder desde cualquier dispositivo</li>
+        <li>Organizar tu libro de cocina personal</li>
+      </ul>
+    </div>
   </div>
 
-  <footer>© 2025 Recetas en Casa</footer>
+  <!-- Configuration Script -->
+  <script src="config.js"></script>
+  
+  <!-- Cognito Auth Script -->
+  <script src="auth.js"></script>
+  
+  <script>
+    // Check if user is already authenticated
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Wait for auth to be ready
+      if (!auth) {
+        await new Promise(resolve => {
+          document.addEventListener('authReady', resolve, { once: true });
+        });
+      }
+      
+      const isAuth = await auth.initialize();
+      if (isAuth) {
+        // User is already authenticated, redirect to home
+        window.location.href = 'home.html';
+      }
+    });
+
+    // Login button click handler
+    document.getElementById('btn-login').addEventListener('click', function() {
+      setLoading(true);
+      
+      // Check if auth configuration is properly set
+      if (auth.config.userPoolId === 'REPLACE_WITH_USER_POOL_ID') {
+        showError('Configuración de autenticación pendiente. Por favor, contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        auth.login();
+      } catch (error) {
+        console.error('Login error:', error);
+        showError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+        setLoading(false);
+      }
+    });
+
+    // Signup button click handler  
+    document.getElementById('btn-signup').addEventListener('click', function() {
+      setLoading(true);
+      
+      // Check if auth configuration is properly set
+      if (auth.config.userPoolId === 'REPLACE_WITH_USER_POOL_ID') {
+        showError('Configuración de autenticación pendiente. Por favor, contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // Redirect to Cognito signup page
+        const signupUrl = `https://${auth.config.domain}.auth.${auth.config.region}.amazoncognito.com/signup?` +
+          `client_id=${auth.config.clientId}&` +
+          `response_type=code&` +
+          `scope=email+openid+profile&` +
+          `redirect_uri=${encodeURIComponent(auth.config.redirectUri)}`;
+        
+        window.location.href = signupUrl;
+      } catch (error) {
+        console.error('Signup error:', error);
+        showError('Error al acceder al registro. Por favor, intenta nuevamente.');
+        setLoading(false);
+      }
+    });
+
+    function setLoading(loading) {
+      const loginBtn = document.getElementById('btn-login');
+      const signupBtn = document.getElementById('btn-signup');
+      const loginText = document.getElementById('login-text');
+      const loginLoading = document.getElementById('login-loading');
+      
+      if (loading) {
+        loginBtn.disabled = true;
+        signupBtn.disabled = true;
+        loginText.style.display = 'none';
+        loginLoading.style.display = 'inline-block';
+      } else {
+        loginBtn.disabled = false;
+        signupBtn.disabled = false;
+        loginText.style.display = 'inline';
+        loginLoading.style.display = 'none';
+      }
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      
+      // Hide error after 5 seconds
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Handle authentication errors from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+    
+    if (error) {
+      let errorMessage = 'Error de autenticación';
+      if (errorDescription) {
+        errorMessage = decodeURIComponent(errorDescription);
+      }
+      showError(errorMessage);
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  </script>
 </body>
 </html>

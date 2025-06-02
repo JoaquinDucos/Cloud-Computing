@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import boto3
+import base64
 from botocore.exceptions import ClientError
 
 # Types
@@ -66,4 +67,28 @@ def validate_table() -> None:
 def validate_bucket() -> None:
     """Validate that the S3 bucket name is configured"""
     if not IMAGES_BUCKET:
-        raise ValueError("IMAGES_BUCKET environment variable is not set") 
+        raise ValueError("IMAGES_BUCKET environment variable is not set")
+
+def extract_user_from_jwt(event: Dict[str, Any]) -> str:
+    """Extract user ID from JWT token in the event"""
+    try:
+        # Get the JWT claims from API Gateway authorizer
+        request_context = event.get('requestContext', {})
+        authorizer = request_context.get('authorizer', {})
+        jwt_claims = authorizer.get('jwt', {}).get('claims', {})
+        
+        # Extract user ID from 'sub' claim (standard JWT claim for user ID)
+        user_id = jwt_claims.get('sub')
+        
+        if not user_id:
+            # Fallback: try to get from 'cognito:username' claim
+            user_id = jwt_claims.get('cognito:username')
+        
+        if not user_id:
+            raise ValueError("User ID not found in JWT token")
+            
+        return user_id
+        
+    except Exception as error:
+        print(f"Error extracting user from JWT: {error}")
+        raise ValueError("Invalid or missing authentication token") 

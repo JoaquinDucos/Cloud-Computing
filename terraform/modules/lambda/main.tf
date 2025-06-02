@@ -10,8 +10,8 @@ resource "aws_lambda_function" "list_recipes" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
     }
   }
 }
@@ -28,8 +28,8 @@ resource "aws_lambda_function" "get_recipe" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
     }
   }
 }
@@ -46,8 +46,8 @@ resource "aws_lambda_function" "create_recipe" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
     }
   }
 }
@@ -64,8 +64,8 @@ resource "aws_lambda_function" "update_recipe" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
     }
   }
 }
@@ -82,8 +82,8 @@ resource "aws_lambda_function" "delete_recipe" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
     }
   }
 }
@@ -100,8 +100,25 @@ resource "aws_lambda_function" "search_recipes" {
 
   environment {
     variables = {
-      RECIPES_TABLE = "${var.project_name}-${var.environment}-recipes"
-      IMAGES_BUCKET = "${var.project_name}-${var.environment}-images"
+      RECIPES_TABLE = var.recipes_table
+      IMAGES_BUCKET = var.images_bucket
+    }
+  }
+}
+
+# Lambda function for auth redirect
+resource "aws_lambda_function" "auth_redirect" {
+  filename         = "${path.module}/auth_redirect.zip"
+  source_code_hash = filebase64sha256("${path.module}/auth_redirect.zip")
+  function_name    = "${var.project_name}-${var.environment}-auth-redirect"
+  role            = var.lambda_role_arn
+  handler         = "auth_redirect_inline.lambda_handler"
+  runtime         = var.lambda_runtime
+  timeout         = 30
+
+  environment {
+    variables = {
+      FRONTEND_URL = "http://${var.project_name}-${var.environment}-frontend.s3-website-us-east-1.amazonaws.com"
     }
   }
 } 
