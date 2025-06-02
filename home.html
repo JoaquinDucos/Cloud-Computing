@@ -527,6 +527,32 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .user-menu.active .dropdown {
+      display: block;
+    }
+
+    .loading-message {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+    }
+
+    .loading-message p {
+      font-size: 1.1rem;
+    }
+
+    #no-recipes-message {
+      background-color: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin: 1rem 0;
+    }
+
+    #no-recipes-message h3 {
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -619,44 +645,25 @@
     </div>
 
     <div class="destacadas">
-      <h2>Recetas Destacadas</h2>
+      <h2>Mis Recetas</h2>
+      <div id="my-recipes-container" style="display: none;">
+        <div class="recetas-grid" id="my-recipes-grid">
+          <!-- Las recetas del usuario se cargarán aquí dinámicamente -->
+        </div>
+      </div>
       
-      <div class="recetas-grid">
-        <div class="receta">
-          <div class="receta-img pizza"></div>
-          <div class="receta-info">
-            <h3>Pizza Casera</h3>
-            <p>Masa suave, salsa de tomate natural y mucho queso. ¡Ideal para compartir!</p>
-            <div class="receta-footer">
-              <span class="tiempo">⏱️ 45 minutos</span>
-              <a href="receta.html?id=1" class="btn">Ver receta</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="receta">
-          <div class="receta-img galletas"></div>
-          <div class="receta-info">
-            <h3>Galletitas de Avena</h3>
-            <p>Sin azúcar y muy fáciles de hacer. Perfectas para el desayuno.</p>
-            <div class="receta-footer">
-              <span class="tiempo">⏱️ 30 minutos</span>
-              <a href="receta.html?id=2" class="btn">Ver receta</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="receta">
-          <div class="receta-img quinoa"></div>
-          <div class="receta-info">
-            <h3>Ensalada de Quinoa</h3>
-            <p>Liviana y nutritiva, con palta, tomate y limón.</p>
-            <div class="receta-footer">
-              <span class="tiempo">⏱️ 20 minutos</span>
-              <a href="receta.html?id=3" class="btn">Ver receta</a>
-            </div>
-          </div>
-        </div>
+      <!-- Mensaje cuando no hay recetas -->
+      <div id="no-recipes-message" style="display: none; text-align: center; padding: 2rem;">
+        <h3>¡Aún no tienes recetas!</h3>
+        <p>¿Por qué no empiezas creando tu primera receta?</p>
+        <button onclick="document.getElementById('add-recipe-modal').style.display='block'" class="btn" style="margin-top: 1rem;">
+          <i class="fas fa-plus"></i> Crear mi primera receta
+        </button>
+      </div>
+      
+      <!-- Mensaje de carga -->
+      <div id="recipes-loading" class="loading-message">
+        <p>Cargando tus recetas...</p>
       </div>
     </div>
   </div>
@@ -771,6 +778,9 @@
         userAvatar.textContent = firstLetter;
         userName.textContent = name.split('@')[0]; // Remove domain from email if present
       }
+      
+      // Load user's recipes automatically when page loads
+      loadMyRecipesOnHome();
     }
 
     function hideLoadingOverlay() {
@@ -784,98 +794,114 @@
       }
     }
 
-    async function showMyRecipes() {
-      if (!auth.isAuthenticated) {
-        alert('Debes estar autenticado para ver tus recetas');
-        return;
-      }
+    // Load user's recipes and display them in the main section
+    async function loadMyRecipesOnHome() {
+      const loadingElement = document.getElementById('recipes-loading');
+      const containerElement = document.getElementById('my-recipes-container');
+      const noRecipesElement = document.getElementById('no-recipes-message');
       
       try {
+        loadingElement.style.display = 'block';
+        containerElement.style.display = 'none';
+        noRecipesElement.style.display = 'none';
+        
         const response = await auth.makeAuthenticatedRequest(`${api_gateway_url}/recipes`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const misRecetas = await response.json();
-        displayMyRecipes(misRecetas);
+        const responseData = await response.json();
+        
+        // Handle both direct array and wrapped object formats
+        let recipes;
+        if (Array.isArray(responseData)) {
+          recipes = responseData;
+        } else if (responseData && Array.isArray(responseData.recipes)) {
+          recipes = responseData.recipes;
+        } else {
+          console.error('Unexpected response format:', responseData);
+          recipes = [];
+        }
+        
+        loadingElement.style.display = 'none';
+        
+        if (recipes.length === 0) {
+          noRecipesElement.style.display = 'block';
+        } else {
+          displayRecipesInHome(recipes);
+          containerElement.style.display = 'block';
+        }
+        
       } catch (error) {
-        console.error('Error al cargar mis recetas:', error);
-        alert('Error al cargar tus recetas. Intenta más tarde.');
+        console.error('Error loading recipes:', error);
+        loadingElement.style.display = 'none';
+        noRecipesElement.style.display = 'block';
       }
     }
-
-    // Mostrar mis recetas
-    function displayMyRecipes(recetas) {
-      const resultsContainer = document.getElementById('search-results');
-      const resultsGrid = document.getElementById('search-results-grid');
+    
+    // Display recipes in the main home grid
+    function displayRecipesInHome(recipes) {
+      const grid = document.getElementById('my-recipes-grid');
+      grid.innerHTML = '';
       
-      // Limpiar resultados anteriores
-      resultsGrid.innerHTML = '';
-      
-      if (!Array.isArray(recetas)) {
-        console.error('Expected array but got:', recetas);
-        resultsGrid.innerHTML = '<p>Error al cargar las recetas.</p>';
-        resultsContainer.style.display = 'block';
-        return;
-      }
-      
-      if (recetas.length === 0) {
-        resultsGrid.innerHTML = `
-          <div style="text-align: center; padding: 2rem; color: #666;">
-            <h3>📝 No tienes recetas aún</h3>
-            <p>¡Agrega tu primera receta usando el botón "Agregar Receta"!</p>
-          </div>
-        `;
-        resultsContainer.style.display = 'block';
-        return;
-      }
-      
-      // Mostrar título actualizado
-      const existingTitle = document.querySelector('#search-results h2');
-      if (existingTitle) {
-        existingTitle.textContent = `Mis Recetas (${recetas.length})`;
-      } else {
-        const title = document.createElement('h2');
-        title.textContent = `Mis Recetas (${recetas.length})`;
-        title.style.marginBottom = '1rem';
-        resultsContainer.insertBefore(title, resultsGrid);
-      }
-      
-      // Crear tarjetas para cada receta
-      recetas.forEach(receta => {
-        const recetaCard = document.createElement('div');
-        recetaCard.className = 'receta';
+      recipes.forEach(recipe => {
+        const recipeCard = document.createElement('div');
+        recipeCard.className = 'receta';
         
-        // Usamos una imagen genérica de comida
-        const imgClass = ['pizza', 'galletas', 'quinoa'][Math.floor(Math.random() * 3)];
+        // Generate image class based on category
+        const categoryImageMap = {
+          'desayuno': 'desayuno',
+          'almuerzo': 'almuerzo', 
+          'cena': 'cena',
+          'postre': 'postre',
+          'saludable': 'saludable',
+          'vegetariano': 'vegetariano'
+        };
         
-        // Limitamos la longitud del texto de instrucciones para mostrar
-        const instruccionesCortas = Array.isArray(receta.instructions) 
-          ? receta.instructions.join(' ').substring(0, 100) + '...'
-          : (receta.instructions || 'No hay instrucciones disponibles.').substring(0, 100) + '...';
+        const imageClass = categoryImageMap[recipe.category?.toLowerCase()] || 'default';
         
-        recetaCard.innerHTML = `
-          <div class="receta-img ${imgClass}"></div>
+        // Truncate instructions for preview
+        const instructions = recipe.instructions || 'Sin instrucciones disponibles';
+        const shortInstructions = Array.isArray(instructions) 
+          ? instructions[0]?.substring(0, 100) + '...'
+          : instructions.substring(0, 100) + '...';
+        
+        recipeCard.innerHTML = `
+          <div class="receta-img ${imageClass}"></div>
           <div class="receta-info">
-            <h3>${receta.title}</h3>
-            <p><strong>Categoría:</strong> ${receta.category || 'N/A'}</p>
-            <p><strong>Ingredientes:</strong> ${Array.isArray(receta.ingredients) ? receta.ingredients.join(', ') : 'N/A'}</p>
-            <p>${instruccionesCortas}</p>
+            <h3>${recipe.title || 'Sin título'}</h3>
+            <p><strong>Categoría:</strong> ${recipe.category || 'Sin categoría'}</p>
+            <p>${shortInstructions}</p>
             <div class="receta-footer">
-              <span class="tiempo">⏱️ ${receta.time} minutos</span>
-              <a href="receta.html?id=${receta.id}" class="btn">Ver receta</a>
+              <span class="tiempo">⏱️ ${recipe.time || 0} minutos</span>
+              <a href="receta.html?id=${recipe.id}" class="btn">Ver receta</a>
             </div>
           </div>
         `;
         
-        resultsGrid.appendChild(recetaCard);
+        grid.appendChild(recipeCard);
       });
+    }
+
+    // Mostrar mis recetas (función para el botón del header)
+    async function showMyRecipes() {
+      if (!auth.isAuthenticated) {
+        alert('Debes iniciar sesión para ver tus recetas.');
+        return;
+      }
       
-      resultsContainer.style.display = 'block';
+      // Scroll to the main recipes section
+      const recipesSection = document.querySelector('.destacadas');
+      if (recipesSection) {
+        recipesSection.scrollIntoView({ behavior: 'smooth' });
+      }
       
-      // Scroll to results
-      resultsContainer.scrollIntoView({ behavior: 'smooth' });
+      // If there are no recipes shown yet, reload them
+      const container = document.getElementById('my-recipes-container');
+      if (container.style.display === 'none') {
+        await loadMyRecipesOnHome();
+      }
     }
 
     function showFavorites() {
