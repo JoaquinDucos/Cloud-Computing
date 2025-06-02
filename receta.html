@@ -463,6 +463,12 @@
         
         console.log('Processing recipe data:', receta);
         
+        // Debug: Show all fields in the recipe object
+        console.log('All recipe fields:');
+        for (const [key, value] of Object.entries(receta)) {
+            console.log(`  ${key}:`, value, `(type: ${typeof value})`);
+        }
+        
         // Ocultar mensaje de carga
         document.getElementById('cargando').style.display = 'none';
         
@@ -471,8 +477,32 @@
         
         // Actualizar datos de la receta en la interfaz (using correct field names)
         document.getElementById('receta-nombre').textContent = receta.title || 'Sin título';
-        document.getElementById('receta-categoria').textContent = receta.category || 'Sin categoría';
-        document.getElementById('receta-tiempo').textContent = `${receta.time || 0}`;
+        
+        // Extract category from description if not present
+        let recipeCategory = receta.category;
+        if (!recipeCategory && receta.description) {
+            const categoryMatch = receta.description.match(/Category:\s*(\w+)/);
+            if (categoryMatch) {
+                recipeCategory = categoryMatch[1];
+                console.log('Extracted category from description:', recipeCategory);
+            }
+        }
+        document.getElementById('receta-categoria').textContent = recipeCategory || 'Sin categoría';
+        
+        // Extract time from description if not present
+        let recipeTime = receta.time;
+        if (!recipeTime && receta.description) {
+            const timeMatch = receta.description.match(/takes\s+(\d+)\s+minutes/);
+            if (timeMatch) {
+                recipeTime = parseInt(timeMatch[1]);
+                console.log('Extracted time from description:', recipeTime);
+            }
+        }
+        
+        // Debug log for time value
+        console.log('Final time value:', recipeTime, 'Type:', typeof recipeTime);
+        document.getElementById('receta-tiempo').textContent = `${recipeTime || 0}`;
+        console.log('Time displayed in DOM:', document.getElementById('receta-tiempo').textContent);
         
         // Asignar imagen según categoría
         const imgClasses = {
@@ -485,7 +515,7 @@
           'default': 'url("https://images.unsplash.com/photo-1506368249639-73a05d6f6488?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80")'
         };
         
-        const category = receta.category ? receta.category.toLowerCase() : 'default';
+        const category = recipeCategory ? recipeCategory.toLowerCase() : 'default';
         const imgUrl = imgClasses[category] || imgClasses.default;
         document.getElementById('receta-imagen').style.backgroundImage = imgUrl;
         

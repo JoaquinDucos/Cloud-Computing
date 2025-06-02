@@ -4,6 +4,8 @@ import json
 import os
 import boto3
 import base64
+import ast
+import re
 from botocore.exceptions import ClientError
 
 # Initialize AWS clients directly
@@ -140,15 +142,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if 'time' in recipe:
             recipe['time'] = int(recipe['time'])
         
-        # Basic data cleaning without risky operations
-        print(f"Recipe before formatting: {recipe}")
-        
-        # Ensure we have basic fields
+        # Ensure we have basic fields with proper defaults
         if 'title' not in recipe or not recipe['title']:
             recipe['title'] = 'Receta sin título'
         if 'category' not in recipe or not recipe['category']:
             recipe['category'] = 'Sin categoría'
-        if 'time' not in recipe:
+        if 'time' not in recipe or recipe['time'] is None or recipe['time'] == '':
+            recipe['time'] = 0
+        
+        # Ensure time is always an integer
+        try:
+            recipe['time'] = int(recipe['time'])
+        except:
             recipe['time'] = 0
             
         # Handle ingredients safely
@@ -158,7 +163,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ingredients_str = recipe['ingredients'].strip()
                 if ingredients_str.startswith('[') and ingredients_str.endswith(']'):
                     try:
-                        import ast
                         recipe['ingredients'] = ast.literal_eval(ingredients_str)
                     except:
                         # If parsing fails, split by comma
@@ -177,7 +181,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 instructions_str = recipe['instructions'].strip()
                 if instructions_str.startswith('[') and instructions_str.endswith(']'):
                     try:
-                        import ast
                         recipe['instructions'] = ast.literal_eval(instructions_str)
                     except:
                         # If parsing fails, split by newlines
