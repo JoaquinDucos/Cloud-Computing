@@ -95,12 +95,12 @@ class CognitoAuth {
 
     // Get access token for API calls
     getAccessToken() {
-        return this.tokens ? this.tokens.access_token : null;
+        return this.tokens ? this.tokens.accessToken : null;
     }
 
     // Get ID token for API calls
     getIdToken() {
-        return this.tokens ? this.tokens.id_token : null;
+        return this.tokens ? this.tokens.idToken : null;
     }
 
     // Get user information
@@ -159,7 +159,11 @@ class CognitoAuth {
             throw new Error('User not authenticated');
         }
 
-        const token = this.getIdToken();
+        const token = this.getAccessToken();
+        if (!token) {
+            throw new Error('No access token available');
+        }
+
         const headers = {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
