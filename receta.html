@@ -606,23 +606,92 @@
         }
         
         // Configurar botones de acciones
-        document.getElementById('btn-guardar').addEventListener('click', function() {
-          alert('Receta guardada en favoritos');
-          this.innerHTML = '<i class="fas fa-bookmark"></i> Guardada';
-          this.disabled = true;
+        const btnGuardar = document.getElementById('btn-guardar');
+        const btnCompartir = document.getElementById('btn-compartir');
+        
+        // Verificar si la receta ya está en favoritos
+        let favoriteRecipes = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+        const isAlreadyFavorite = favoriteRecipes.find(fav => fav.id === recetaId);
+        
+        if (isAlreadyFavorite) {
+          btnGuardar.innerHTML = '<i class="fas fa-bookmark"></i> Ya guardada';
+          btnGuardar.disabled = true;
+          btnGuardar.style.backgroundColor = '#6c757d';
+        }
+        
+        btnGuardar.addEventListener('click', function() {
+          // Obtener datos de la receta actual para guardar en favoritos
+          const recipeData = {
+            id: recetaId,
+            title: receta.title || 'Sin título',
+            category: recipeCategory || 'Sin categoría',
+            time: recipeTime || 0,
+            description: receta.description || '',
+            ingredients: receta.ingredients || [],
+            instructions: receta.instructions || []
+          };
+          
+          console.log('Attempting to save recipe to favorites:', recipeData);
+          
+          // Agregar a favoritos usando localStorage
+          let currentFavorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+          
+          if (!currentFavorites.find(fav => fav.id === recipeData.id)) {
+            currentFavorites.push(recipeData);
+            localStorage.setItem('favoriteRecipes', JSON.stringify(currentFavorites));
+            
+            this.innerHTML = '<i class="fas fa-bookmark"></i> Guardada';
+            this.disabled = true;
+            this.style.backgroundColor = '#6c757d';
+            
+            // Show success message
+            alert(`¡"${recipeData.title}" agregada a favoritos!`);
+            console.log('Recipe successfully added to favorites');
+          } else {
+            alert(`"${recipeData.title}" ya está en tus favoritos`);
+            this.innerHTML = '<i class="fas fa-bookmark"></i> Ya guardada';
+            this.disabled = true;
+            this.style.backgroundColor = '#6c757d';
+          }
         });
         
-        document.getElementById('btn-compartir').addEventListener('click', function() {
+        btnCompartir.addEventListener('click', function() {
           const url = window.location.href;
-          navigator.clipboard.writeText(url)
-            .then(() => {
-              alert('Enlace copiado al portapapeles');
-            })
-            .catch(err => {
-              console.error('Error al copiar: ', err);
-              alert('No se pudo copiar el enlace');
-            });
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+              .then(() => {
+                alert('¡Enlace copiado al portapapeles!');
+              })
+              .catch(err => {
+                console.error('Error al copiar: ', err);
+                // Fallback for older browsers
+                fallbackCopyToClipboard(url);
+              });
+          } else {
+            // Fallback for older browsers
+            fallbackCopyToClipboard(url);
+          }
         });
+        
+        // Fallback function for copying to clipboard
+        function fallbackCopyToClipboard(text) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+              alert('¡Enlace copiado al portapapeles!');
+            } else {
+              alert('No se pudo copiar el enlace automáticamente. URL: ' + text);
+            }
+          } catch (err) {
+            alert('No se pudo copiar el enlace automáticamente. URL: ' + text);
+          }
+          document.body.removeChild(textArea);
+        }
         
       } catch (error) {
         console.error('Error al cargar la receta:', error);

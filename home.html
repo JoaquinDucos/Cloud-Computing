@@ -274,9 +274,17 @@
       background-position: center;
     }
 
+    /* Agregar más clases de imágenes basadas en categorías */
+    .desayuno { background-image: url('https://images.unsplash.com/photo-1533089860892-a9b969df67af?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .almuerzo { background-image: url('https://images.unsplash.com/photo-1547592180-85f173990554?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .cena { background-image: url('https://images.unsplash.com/photo-1559847844-5315695dadae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .postre { background-image: url('https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .saludable { background-image: url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .vegetariano { background-image: url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
     .pizza { background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
     .galletas { background-image: url('https://images.unsplash.com/photo-1558961363-fa8fdf82db35?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
     .quinoa { background-image: url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
+    .default { background-image: url('https://images.unsplash.com/photo-1506368249639-73a05d6f6488?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'); }
 
     .receta-info {
       padding: 1.5rem;
@@ -285,6 +293,16 @@
     .receta h3 {
       margin-bottom: 10px;
       color: var(--primary-dark);
+    }
+
+    .categoria-tag {
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
     }
 
     .receta p {
@@ -303,6 +321,9 @@
     .tiempo {
       font-size: 0.9rem;
       color: #777;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .btn {
@@ -570,9 +591,10 @@
         <span id="user-name">Usuario</span>
       </div>
       <nav>
+        <a href="home.html">Inicio</a>
         <a href="#" onclick="showMyRecipes()">Mis Recetas</a>
         <a href="#" onclick="showFavorites()">Favoritos</a>
-        <button class="logout-btn" onclick="logout()">Salir</button>
+        <a href="index.html">Salir</a>
       </nav>
     </div>
   </header>
@@ -735,6 +757,7 @@
     // Global variables
     let searchIngredients = [];
     let currentUser = null;
+    let favoriteRecipes = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
 
     // Check authentication on page load
     document.addEventListener('DOMContentLoaded', async function() {
@@ -849,6 +872,26 @@
         const recipeCard = document.createElement('div');
         recipeCard.className = 'receta';
         
+        // Extract category from description if not present
+        let recipeCategory = recipe.category;
+        if (!recipeCategory && recipe.description) {
+            const categoryMatch = recipe.description.match(/Category:\s*(\w+)/);
+            if (categoryMatch) {
+                recipeCategory = categoryMatch[1];
+                console.log('Extracted category from description:', recipeCategory);
+            }
+        }
+        
+        // Extract time from description if not present
+        let recipeTime = recipe.time;
+        if (!recipeTime && recipe.description) {
+            const timeMatch = recipe.description.match(/takes\s+(\d+)\s+minutes/);
+            if (timeMatch) {
+                recipeTime = parseInt(timeMatch[1]);
+                console.log('Extracted time from description:', recipeTime);
+            }
+        }
+        
         // Generate image class based on category
         const categoryImageMap = {
           'desayuno': 'desayuno',
@@ -859,23 +902,31 @@
           'vegetariano': 'vegetariano'
         };
         
-        const imageClass = categoryImageMap[recipe.category?.toLowerCase()] || 'default';
+        const imageClass = categoryImageMap[recipeCategory?.toLowerCase()] || 'default';
         
         // Truncate instructions for preview
         const instructions = recipe.instructions || 'Sin instrucciones disponibles';
         const shortInstructions = Array.isArray(instructions) 
-          ? instructions[0]?.substring(0, 100) + '...'
-          : instructions.substring(0, 100) + '...';
+          ? (instructions[0] || '').substring(0, 80) + '...'
+          : instructions.substring(0, 80) + '...';
         
         recipeCard.innerHTML = `
           <div class="receta-img ${imageClass}"></div>
           <div class="receta-info">
             <h3>${recipe.title || 'Sin título'}</h3>
-            <p><strong>Categoría:</strong> ${recipe.category || 'Sin categoría'}</p>
+            <div class="categoria-tag">${recipeCategory || 'Sin categoría'}</div>
             <p>${shortInstructions}</p>
             <div class="receta-footer">
-              <span class="tiempo">⏱️ ${recipe.time || 0} minutos</span>
-              <a href="receta.html?id=${recipe.id}" class="btn">Ver receta</a>
+              <span class="tiempo">
+                <i class="far fa-clock"></i>
+                ${recipeTime || 0} minutos
+              </span>
+              <div style="display: flex; gap: 10px;">
+                <button onclick="addToFavorites(${JSON.stringify(recipe).replace(/"/g, '&quot;')})" class="btn" style="background-color: #e74c3c; padding: 6px 12px;" title="Agregar a favoritos">
+                  <i class="far fa-heart"></i>
+                </button>
+                <a href="receta.html?id=${recipe.id}" class="btn">Ver receta</a>
+              </div>
             </div>
           </div>
         `;
@@ -891,21 +942,159 @@
         return;
       }
       
+      // Restablecer el título de la sección
+      const destacadasTitle = document.querySelector('.destacadas h2');
+      destacadasTitle.textContent = 'Mis Recetas';
+      
+      // Ocultar resultados de búsqueda si están visibles
+      const searchResults = document.getElementById('search-results');
+      searchResults.style.display = 'none';
+      
       // Scroll to the main recipes section
       const recipesSection = document.querySelector('.destacadas');
       if (recipesSection) {
         recipesSection.scrollIntoView({ behavior: 'smooth' });
       }
       
-      // If there are no recipes shown yet, reload them
-      const container = document.getElementById('my-recipes-container');
-      if (container.style.display === 'none') {
-        await loadMyRecipesOnHome();
-      }
+      // Recargar las recetas del usuario
+      await loadMyRecipesOnHome();
     }
 
     function showFavorites() {
-      alert('Funcionalidad en desarrollo: Favoritos');
+      // Cambiar el título de la sección
+      const destacadasTitle = document.querySelector('.destacadas h2');
+      destacadasTitle.textContent = 'Mis Favoritos';
+      
+      // Ocultar resultados de búsqueda si están visibles
+      const searchResults = document.getElementById('search-results');
+      searchResults.style.display = 'none';
+      
+      const container = document.getElementById('my-recipes-container');
+      const loadingElement = document.getElementById('recipes-loading');
+      const noRecipesElement = document.getElementById('no-recipes-message');
+      
+      // Si no hay favoritos, mostrar mensaje
+      if (favoriteRecipes.length === 0) {
+        container.style.display = 'none';
+        if (loadingElement) loadingElement.style.display = 'none';
+        noRecipesElement.innerHTML = `
+          <div style="text-align: center; padding: 3rem;">
+            <i class="far fa-heart" style="font-size: 4rem; color: #ddd; margin-bottom: 1rem;"></i>
+            <h3 style="color: #666; margin-bottom: 1rem;">No tienes favoritos aún</h3>
+            <p style="color: #999;">Agrega recetas a favoritos haciendo clic en el corazón</p>
+          </div>
+        `;
+        noRecipesElement.style.display = 'block';
+        return;
+      }
+      
+      // Mostrar favoritos
+      displayFavoriteRecipes();
+      container.style.display = 'block';
+      if (loadingElement) loadingElement.style.display = 'none';
+      noRecipesElement.style.display = 'none';
+      
+      // Scroll to favorites section
+      const recipesSection = document.querySelector('.destacadas');
+      if (recipesSection) {
+        recipesSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    // Función para mostrar recetas favoritas
+    function displayFavoriteRecipes() {
+      const grid = document.getElementById('my-recipes-grid');
+      grid.innerHTML = '';
+      
+      favoriteRecipes.forEach(recipe => {
+        const recipeCard = document.createElement('div');
+        recipeCard.className = 'receta';
+        
+        // Extract category from description if not present
+        let recipeCategory = recipe.category;
+        if (!recipeCategory && recipe.description) {
+            const categoryMatch = recipe.description.match(/Category:\s*(\w+)/);
+            if (categoryMatch) {
+                recipeCategory = categoryMatch[1];
+            }
+        }
+        
+        // Extract time from description if not present
+        let recipeTime = recipe.time;
+        if (!recipeTime && recipe.description) {
+            const timeMatch = recipe.description.match(/takes\s+(\d+)\s+minutes/);
+            if (timeMatch) {
+                recipeTime = parseInt(timeMatch[1]);
+            }
+        }
+        
+        const categoryImageMap = {
+          'desayuno': 'desayuno',
+          'almuerzo': 'almuerzo', 
+          'cena': 'cena',
+          'postre': 'postre',
+          'saludable': 'saludable',
+          'vegetariano': 'vegetariano'
+        };
+        
+        const imageClass = categoryImageMap[recipeCategory?.toLowerCase()] || 'default';
+        
+        const instructions = recipe.instructions || 'Sin instrucciones disponibles';
+        const shortInstructions = Array.isArray(instructions) 
+          ? (instructions[0] || '').substring(0, 80) + '...'
+          : instructions.substring(0, 80) + '...';
+        
+        recipeCard.innerHTML = `
+          <div class="receta-img ${imageClass}"></div>
+          <div class="receta-info">
+            <h3>${recipe.title || 'Sin título'}</h3>
+            <div class="categoria-tag">${recipeCategory || 'Sin categoría'}</div>
+            <p>${shortInstructions}</p>
+            <div class="receta-footer">
+              <span class="tiempo">
+                <i class="far fa-clock"></i>
+                ${recipeTime || 0} minutos
+              </span>
+              <div style="display: flex; gap: 10px;">
+                <button onclick="removeFromFavorites('${recipe.id}')" class="btn" style="background-color: #e74c3c; padding: 6px 12px;">
+                  <i class="fas fa-heart-broken"></i>
+                </button>
+                <a href="receta.html?id=${recipe.id}" class="btn">Ver receta</a>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        grid.appendChild(recipeCard);
+      });
+    }
+    
+    // Función para agregar a favoritos
+    function addToFavorites(recipe) {
+      if (!favoriteRecipes.find(fav => fav.id === recipe.id)) {
+        favoriteRecipes.push(recipe);
+        localStorage.setItem('favoriteRecipes', JSON.stringify(favoriteRecipes));
+        console.log('Receta agregada a favoritos:', recipe.title);
+        
+        // Mostrar mensaje de éxito
+        alert(`¡"${recipe.title}" agregada a favoritos!`);
+      } else {
+        alert(`"${recipe.title}" ya está en tus favoritos`);
+      }
+    }
+    
+    // Función para quitar de favoritos
+    function removeFromFavorites(recipeId) {
+      favoriteRecipes = favoriteRecipes.filter(recipe => recipe.id !== recipeId);
+      localStorage.setItem('favoriteRecipes', JSON.stringify(favoriteRecipes));
+      
+      // Si estamos en la vista de favoritos, actualizar la vista
+      const destacadasTitle = document.querySelector('.destacadas h2');
+      if (destacadasTitle.textContent === 'Mis Favoritos') {
+        showFavorites();
+      }
+      
+      console.log('Receta removida de favoritos');
     }
 
     // Configuración de tipos de búsqueda
@@ -1174,23 +1363,58 @@
         const recetaCard = document.createElement('div');
         recetaCard.className = 'receta';
         
-        // Usamos una imagen genérica de comida
-        const imgClass = ['pizza', 'galletas', 'quinoa'][Math.floor(Math.random() * 3)];
+        // Extract category from description if not present
+        let recipeCategory = receta.category;
+        if (!recipeCategory && receta.description) {
+            const categoryMatch = receta.description.match(/Category:\s*(\w+)/);
+            if (categoryMatch) {
+                recipeCategory = categoryMatch[1];
+            }
+        }
+        
+        // Extract time from description if not present
+        let recipeTime = receta.time;
+        if (!recipeTime && receta.description) {
+            const timeMatch = receta.description.match(/takes\s+(\d+)\s+minutes/);
+            if (timeMatch) {
+                recipeTime = parseInt(timeMatch[1]);
+            }
+        }
+        
+        // Generate image class based on category
+        const categoryImageMap = {
+          'desayuno': 'desayuno',
+          'almuerzo': 'almuerzo', 
+          'cena': 'cena',
+          'postre': 'postre',
+          'saludable': 'saludable',
+          'vegetariano': 'vegetariano'
+        };
+        
+        const imageClass = categoryImageMap[recipeCategory?.toLowerCase()] || 'default';
         
         // Limitamos la longitud del texto de instrucciones para mostrar
         const instruccionesCortas = Array.isArray(receta.instructions) 
-          ? receta.instructions.join(' ').substring(0, 100) + '...'
-          : (receta.instructions || 'No hay instrucciones disponibles.').substring(0, 100) + '...';
+          ? (receta.instructions[0] || '').substring(0, 80) + '...'
+          : (receta.instructions || 'No hay instrucciones disponibles.').substring(0, 80) + '...';
         
         recetaCard.innerHTML = `
-          <div class="receta-img ${imgClass}"></div>
+          <div class="receta-img ${imageClass}"></div>
           <div class="receta-info">
             <h3>${receta.title}</h3>
-            <p><strong>Categoría:</strong> ${receta.category || 'N/A'}</p>
+            <div class="categoria-tag">${recipeCategory || 'Sin categoría'}</div>
             <p>${instruccionesCortas}</p>
             <div class="receta-footer">
-              <span class="tiempo">⏱️ ${receta.time} minutos</span>
-              <a href="receta.html?id=${receta.id}" class="btn">Ver receta</a>
+              <span class="tiempo">
+                <i class="far fa-clock"></i>
+                ${recipeTime || 0} minutos
+              </span>
+              <div style="display: flex; gap: 10px;">
+                <button onclick="addToFavorites(${JSON.stringify(receta).replace(/"/g, '&quot;')})" class="btn" style="background-color: #e74c3c; padding: 6px 12px;" title="Agregar a favoritos">
+                  <i class="far fa-heart"></i>
+                </button>
+                <a href="receta.html?id=${receta.id}" class="btn">Ver receta</a>
+              </div>
             </div>
           </div>
         `;
